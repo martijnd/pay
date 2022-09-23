@@ -16,10 +16,7 @@ type PeopleWithData = Person & {
   outgoing?: { id: number; amount: number }[];
 };
 
-function getBalance<T extends Person>(
-  expenses: Expense[],
-  people: readonly T[]
-) {
+function getBalance<T extends Person>(expenses: Expense[], people: readonly T[]) {
   return people.map((person) => {
     const positive = expenses
       .filter((expense) => expense.payer_id === person.id)
@@ -29,11 +26,7 @@ function getBalance<T extends Person>(
       .reduce(
         (total, contributedExpense) =>
           total +
-          Math.round(
-            (contributedExpense.cost /
-              contributedExpense.participant_ids.length) *
-              100
-          ) /
+          Math.round((contributedExpense.cost / contributedExpense.participant_ids.length) * 100) /
             100,
         0
       );
@@ -43,9 +36,7 @@ function getBalance<T extends Person>(
         expenses
           .filter((expense) => expense.participant_ids.includes(person.id))
           .reduce((total, contributedExpense) => {
-            const cost =
-              contributedExpense.cost /
-              contributedExpense.participant_ids.length;
+            const cost = contributedExpense.cost / contributedExpense.participant_ids.length;
 
             return total + cost;
           }, 0)
@@ -72,10 +63,7 @@ function getResult(people: PeopleWithData[]) {
         const amount = Math.abs(Math.max(debtor.balance, person.balance));
         incoming = [...incoming, { id: debtor.id, amount }];
         debtor.balance += amount;
-        debtor.outgoing = [
-          ...(debtor.outgoing ?? []),
-          { id: person.id, amount },
-        ];
+        debtor.outgoing = [...(debtor.outgoing ?? []), { id: person.id, amount }];
         person.balance -= amount;
       }
     });
