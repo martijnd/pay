@@ -15,7 +15,8 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "skipLibCheck": true,
-    "types": ["vitest/importMeta"]
+    "types": ["vitest/importMeta"],
+    "outDir": "out"
   },
   "include": ["src"]
 }

@@ -16,6 +16,10 @@ type PeopleWithData = Person & {
   outgoing?: { id: number; amount: number }[];
 };
 
+function r(val: number) {
+  return Math.round(val * 100) / 100;
+}
+
 function getBalance<T extends Person>(expenses: Expense[], people: readonly T[]) {
   return people.map((person) => {
     const positive = expenses
@@ -25,26 +29,13 @@ function getBalance<T extends Person>(expenses: Expense[], people: readonly T[])
       .filter((expense) => expense.participant_ids.includes(person.id))
       .reduce(
         (total, contributedExpense) =>
-          total +
-          Math.round((contributedExpense.cost / contributedExpense.participant_ids.length) * 100) /
-            100,
+          total + r(contributedExpense.cost / contributedExpense.participant_ids.length),
         0
       );
 
-    if (person.name === 'Tim') {
-      console.log(
-        expenses
-          .filter((expense) => expense.participant_ids.includes(person.id))
-          .reduce((total, contributedExpense) => {
-            const cost = contributedExpense.cost / contributedExpense.participant_ids.length;
-
-            return total + cost;
-          }, 0)
-      );
-    }
     return {
       ...person,
-      balance: Math.round((positive - negative) * 100) / 100,
+      balance: r(positive - negative),
     };
   });
 }
@@ -60,11 +51,11 @@ function getResult(people: PeopleWithData[]) {
 
     debtors.forEach((debtor) => {
       if (person.balance > 0 && debtor.balance < 0) {
-        const amount = Math.abs(Math.max(debtor.balance, person.balance));
+        const amount = Math.min(Math.abs(debtor.balance), person.balance);
         incoming = [...incoming, { id: debtor.id, amount }];
-        debtor.balance += amount;
+        debtor.balance = r(debtor.balance + amount);
         debtor.outgoing = [...(debtor.outgoing ?? []), { id: person.id, amount }];
-        person.balance -= amount;
+        person.balance = r(person.balance - amount);
       }
     });
 
@@ -207,7 +198,7 @@ if (import.meta.vitest) {
     ] as const;
 
     function i(name: typeof people[number]['name']) {
-      return people.find((p) => p.name === name)!.id;
+      return people.find((p) => p.name === name)?.id ?? 1;
     }
 
     const expenses: Expense[] = [
@@ -269,7 +260,7 @@ if (import.meta.vitest) {
         cost: 15,
       },
       {
-        name: 'koekjes en 🥐',
+        name: 'Koekjes en 🥐',
         participant_ids: [i('Mieke')],
         payer_id: i('Mieke'),
         cost: 10.5,
@@ -364,7 +355,6 @@ if (import.meta.vitest) {
           i('Hans'),
           i('Jaap'),
           i('Martijn'),
-          i('Max'),
           i('Mieke'),
           i('Monique'),
           i('Sandra'),
@@ -372,7 +362,7 @@ if (import.meta.vitest) {
           i('Suzanne'),
           i('Tim'),
         ],
-        payer_id: i('Sandra'),
+        payer_id: i('Nico'),
         cost: 63.09,
       },
       {
@@ -390,67 +380,249 @@ if (import.meta.vitest) {
         {
           id: 1,
           name: 'Monique',
-          balance: 129.86,
+          balance: 129.38,
         },
         {
           id: 2,
           name: 'Jaap',
-          balance: -159.14,
+          balance: -159.62,
         },
         {
           id: 3,
           name: 'Martijn',
-          balance: -77.58,
+          balance: -78.06,
         },
         {
           id: 4,
           name: 'Tim',
-          balance: -183.14,
+          balance: -183.62,
         },
         {
           id: 5,
           name: 'Dennis',
-          balance: -155.14,
+          balance: -155.62,
         },
         {
           id: 6,
           name: 'Suzanne',
-          balance: -183.14,
+          balance: -183.62,
         },
         {
           id: 7,
           name: 'Evelien',
-          balance: -159.14,
+          balance: -159.62,
         },
         {
           id: 8,
           name: 'Max',
-          balance: -159.14,
+          balance: -153.88,
         },
         {
           id: 9,
           name: 'Nico',
-          balance: 140.86,
+          balance: 203.47,
         },
         {
           id: 10,
           name: 'Sandra',
-          balance: -60.05,
+          balance: -123.62,
         },
         {
           id: 11,
           name: 'Mieke',
-          balance: -159.14,
+          balance: -159.62,
         },
         {
           id: 12,
           name: 'Hans',
-          balance: 1024.86,
+          balance: 1024.38,
         },
       ]);
+
       const result = getResult(balance);
-      console.log(result);
-      // expect(result).toEqual([]);
+
+      expect(result).toEqual([
+        {
+          id: 1,
+          name: 'Monique',
+          balance: 0,
+          incoming: [
+            {
+              id: 2,
+              amount: 129.38,
+            },
+          ],
+        },
+        {
+          id: 2,
+          balance: 0,
+          name: 'Jaap',
+          outgoing: [
+            {
+              amount: 129.38,
+              id: 1,
+            },
+            {
+              amount: 30.24,
+              id: 9,
+            },
+          ],
+        },
+        {
+          id: 3,
+          balance: 0,
+          name: 'Martijn',
+          outgoing: [
+            {
+              amount: 78.06,
+              id: 9,
+            },
+          ],
+        },
+        {
+          id: 4,
+          balance: 0,
+          name: 'Tim',
+          outgoing: [
+            {
+              amount: 95.17,
+              id: 9,
+            },
+            {
+              amount: 88.45,
+              id: 12,
+            },
+          ],
+        },
+        {
+          id: 5,
+          balance: 0,
+          name: 'Dennis',
+          outgoing: [
+            {
+              amount: 155.62,
+              id: 12,
+            },
+          ],
+        },
+        {
+          id: 6,
+          balance: 0,
+          name: 'Suzanne',
+          outgoing: [
+            {
+              amount: 183.62,
+              id: 12,
+            },
+          ],
+        },
+        {
+          id: 7,
+          balance: 0,
+          name: 'Evelien',
+          outgoing: [
+            {
+              amount: 159.62,
+              id: 12,
+            },
+          ],
+        },
+        {
+          id: 8,
+          balance: 0,
+          name: 'Max',
+          outgoing: [
+            {
+              amount: 153.88,
+              id: 12,
+            },
+          ],
+        },
+        {
+          id: 9,
+          balance: 0,
+          name: 'Nico',
+          incoming: [
+            {
+              amount: 30.24,
+              id: 2,
+            },
+            {
+              amount: 78.06,
+              id: 3,
+            },
+            {
+              amount: 95.17,
+              id: 4,
+            },
+          ],
+        },
+        {
+          id: 10,
+          balance: 0,
+          name: 'Sandra',
+          outgoing: [
+            {
+              amount: 123.62,
+              id: 12,
+            },
+          ],
+        },
+        {
+          id: 11,
+          balance: -0.05,
+          name: 'Mieke',
+          outgoing: [
+            {
+              amount: 159.57,
+              id: 12,
+            },
+          ],
+        },
+        {
+          id: 12,
+          name: 'Hans',
+          balance: 0,
+          incoming: [
+            {
+              id: 4,
+              amount: 88.45,
+            },
+            {
+              id: 5,
+              amount: 155.62,
+            },
+            {
+              amount: 183.62,
+              id: 6,
+            },
+            {
+              amount: 159.62,
+              id: 7,
+            },
+            {
+              amount: 153.88,
+              id: 8,
+            },
+            {
+              amount: 123.62,
+              id: 10,
+            },
+            {
+              amount: 159.57,
+              id: 11,
+            },
+          ],
+        },
+      ]);
+      const debtorSum = balance
+        .filter((p) => p.balance < 0)
+        .reduce((total, debtor) => total + Math.abs(debtor.balance), 0);
+      const creditorSum = balance
+        .filter((p) => p.balance >= 0)
+        .reduce((total, debtor) => total + debtor.balance, 0);
+
+      expect(debtorSum - creditorSum).toBeLessThanOrEqual(0.05);
     });
   });
 }
